@@ -12,6 +12,15 @@ class ApiException implements Exception {
   final int? status;
   ApiException(this.message, {this.code, this.status});
 
+  /// No internet, a timeout or a server-side failure: the same request may
+  /// succeed later. Anything else (4xx) is a rejection that retrying won't fix.
+  bool get isTransient =>
+      code == 'NETWORK' ||
+      code == 'TIMEOUT' ||
+      status == 408 ||
+      status == 429 ||
+      (status ?? 0) >= 500;
+
   @override
   String toString() => message;
 }

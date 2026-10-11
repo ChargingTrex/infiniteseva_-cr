@@ -8,12 +8,18 @@ import 'pages/login_page.dart';
 import 'pages/participate_page.dart';
 import 'pages/signup_page.dart';
 import 'services/app_state.dart';
+import 'services/offline_queue.dart';
 import 'theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting();
   await AppState.instance.load();
+  try {
+    await RecitationQueue.instance.init();
+  } catch (_) {
+    // Offline saving unavailable; the app still works online.
+  }
   runApp(const InfiniteSevaApp());
 }
 

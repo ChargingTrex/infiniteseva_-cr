@@ -122,6 +122,17 @@ const Map<String, String> en = {
   'participate.membersRequired': 'Please enter total team members (2-100)',
   'participate.submitError':
       'Your parayanam was not recorded. Check your internet connection and try again.',
+  'participate.savedOffline': 'Saved on your phone',
+  'participate.savedOfflineSub':
+      "There's no internet right now. Your parayanam is saved and will be sent automatically when you're back online.",
+
+  // Offline sync
+  'sync.pendingOne': '1 parayanam waiting to be sent',
+  'sync.pendingMany': '{n} parayanams waiting to be sent',
+  'sync.sendNow': 'Send now',
+  'sync.sending': 'Sending…',
+  'sync.failed': 'Could not be recorded',
+  'sync.dismiss': 'Dismiss',
 
   // Dashboard
   'dashboard.namaste': 'Namaste',
@@ -333,6 +344,17 @@ const Map<String, String> ta = {
   'participate.membersRequired': 'மொத்த குழு உறுப்பினர்களை உள்ளிடவும் (2-100)',
   'participate.submitError':
       'உங்கள் பாராயணம் பதிவு செய்யப்படவில்லை. இணைய இணைப்பைச் சரிபார்த்து மீண்டும் முயற்சிக்கவும்.',
+  'participate.savedOffline': 'உங்கள் தொலைபேசியில் சேமிக்கப்பட்டது',
+  'participate.savedOfflineSub':
+      'இப்போது இணைய இணைப்பு இல்லை. உங்கள் பாராயணம் சேமிக்கப்பட்டது; இணையம் கிடைத்ததும் தானாக அனுப்பப்படும்.',
+
+  // Offline sync
+  'sync.pendingOne': '1 பாராயணம் அனுப்பக் காத்திருக்கிறது',
+  'sync.pendingMany': '{n} பாராயணங்கள் அனுப்பக் காத்திருக்கின்றன',
+  'sync.sendNow': 'இப்போது அனுப்பு',
+  'sync.sending': 'அனுப்பப்படுகிறது…',
+  'sync.failed': 'பதிவு செய்ய முடியவில்லை',
+  'sync.dismiss': 'நீக்கு',
 
   // Dashboard
   'dashboard.namaste': 'நமஸ்தே',

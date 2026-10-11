@@ -13,11 +13,12 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 import '../config.dart';
 import '../services/api.dart';
 import '../services/app_state.dart';
+import '../services/offline_queue.dart';
 import '../theme.dart';
 import '../util.dart';
 import '../widgets/common.dart';
 
-enum Stage { idle, choosingType, teamCapture, running, submitting, success, error }
+enum Stage { idle, choosingType, teamCapture, running, submitting, success, savedOffline, error }
 
 class _Loc {
   final double latitude;
@@ -284,23 +285,23 @@ class _ParticipatePageState extends State<ParticipatePage> {
       _errorMsg = '';
     });
 
-    try {
-      final isTeam = _type == 'TEAM';
-      final payload = <String, dynamic>{
-        'startTime': _start!.toUtc().toIso8601String(),
-        'endTime': _end!.toUtc().toIso8601String(),
-        'durationSeconds': _duration,
-        'type': _type,
-        'latitude': _location?.latitude,
-        'longitude': _location?.longitude,
-        'locationAddress': _location?.addressName,
-        'photoBase64': _photoBytes != null
-            ? 'data:$_photoMime;base64,${base64Encode(_photoBytes!)}'
-            : null,
-        'photoMime': _photoBytes != null ? _photoMime : null,
-        'teamSize': isTeam ? int.tryParse(_teamCtrl.text.trim()) : null,
-      };
+    final isTeam = _type == 'TEAM';
+    final payload = <String, dynamic>{
+      'startTime': _start!.toUtc().toIso8601String(),
+      'endTime': _end!.toUtc().toIso8601String(),
+      'durationSeconds': _duration,
+      'type': _type,
+      'latitude': _location?.latitude,
+      'longitude': _location?.longitude,
+      'locationAddress': _location?.addressName,
+      'photoBase64': _photoBytes != null
+          ? 'data:$_photoMime;base64,${base64Encode(_photoBytes!)}'
+          : null,
+      'photoMime': _photoBytes != null ? _photoMime : null,
+      'teamSize': isTeam ? int.tryParse(_teamCtrl.text.trim()) : null,
+    };
 
+    try {
       final res = await Api.instance.submitRecitation(
         userId: user.id,
         idempotencyKey: _key!,
@@ -313,9 +314,23 @@ class _ParticipatePageState extends State<ParticipatePage> {
         _stage = Stage.success;
       });
     } on ApiException catch (e) {
+      if (e.isTransient) {
+        // No internet / server down: keep it on the phone and send it later
+        // with the same key, so it is counted exactly once.
+        try {
+          await RecitationQueue.instance
+              .add(key: _key!, userId: user.id, payload: payload);
+          if (!mounted) return;
+          _key = null;
+          setState(() => _stage = Stage.savedOffline);
+          return;
+        } catch (_) {
+          // Could not save locally either; fall through to the error screen.
+        }
+      }
       if (!mounted) return;
       setState(() {
-        _errorMsg = (e.code == 'NETWORK' || e.code == 'TIMEOUT' || e.message.isEmpty)
+        _errorMsg = (e.isTransient || e.message.isEmpty)
             ? AppState.instance.t('participate.submitError')
             : e.message;
         _stage = Stage.error;
@@ -377,6 +392,8 @@ class _ParticipatePageState extends State<ParticipatePage> {
         return _submitting(app);
       case Stage.success:
         return _success(app);
+      case Stage.savedOffline:
+        return _savedOffline(app);
       case Stage.error:
         return _errorView(app);
     }
@@ -836,6 +853,41 @@ class _ParticipatePageState extends State<ParticipatePage> {
         ),
         const SizedBox(height: 12),
         SecondaryButton(label: t('participate.backHome'), onPressed: () => goHome(context)),
+      ],
+    );
+  }
+
+  Widget _savedOffline(AppState app) {
+    final t = app.t;
+    final isTeam = _type == 'TEAM';
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 80,
+          height: 80,
+          decoration: const BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: LinearGradient(colors: [C.gold, C.goldDark]),
+          ),
+          child: const Icon(Icons.cloud_upload_outlined, color: C.cream, size: 40),
+        ),
+        const SizedBox(height: 18),
+        Text(t('participate.savedOffline'),
+            textAlign: TextAlign.center, style: display(26, height: 1.15)),
+        const SizedBox(height: 10),
+        Text(
+          '${isTeam ? '👥 ${t('participate.team')} (${_teamCtrl.text})' : '🧘 ${t('participate.individual')}'}'
+          ' · ${t('participate.duration')}: ${fmtDurationClock(_elapsed)}',
+          textAlign: TextAlign.center,
+          style: body(13.5, color: C.maroon.withOpacity(0.65)),
+        ),
+        const SizedBox(height: 14),
+        Text(t('participate.savedOfflineSub'),
+            textAlign: TextAlign.center,
+            style: body(14, color: C.maroon.withOpacity(0.7), height: 1.5)),
+        const SizedBox(height: 24),
+        PrimaryButton(label: t('participate.backHome'), onPressed: () => goHome(context)),
       ],
     );
   }

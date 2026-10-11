@@ -7,7 +7,7 @@ import '../services/api.dart';
 import '../theme.dart';
 import '../util.dart';
 
-/// Shows either a base64 data-URL image or a normal network image.
+/// Shows a bundled asset (`assets/...`), a base64 data-URL image or a normal network image.
 class AdImage extends StatefulWidget {
   final String src;
   final BoxFit fit;
@@ -34,6 +34,10 @@ class _AdImageState extends State<AdImage> {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.src.startsWith('assets/')) {
+      return Image.asset(widget.src,
+          fit: widget.fit, errorBuilder: (_, __, ___) => const SizedBox.shrink());
+    }
     if (_bytes != null) {
       return Image.memory(_bytes!,
           fit: widget.fit, gaplessPlayback: true, errorBuilder: (_, __, ___) => const SizedBox.shrink());
@@ -47,7 +51,9 @@ class _AdImageState extends State<AdImage> {
 class AdCarousel extends StatefulWidget {
   final List<Ad> items;
   final String label;
-  const AdCarousel({super.key, required this.items, this.label = ''});
+  final BoxFit fit;
+  const AdCarousel(
+      {super.key, required this.items, this.label = '', this.fit = BoxFit.cover});
 
   @override
   State<AdCarousel> createState() => _AdCarouselState();
@@ -95,7 +101,7 @@ class _AdCarouselState extends State<AdCarousel> {
                 fit: StackFit.expand,
                 children: [
                   src != null
-                      ? AdImage(src: src)
+                      ? AdImage(src: src, fit: widget.fit)
                       : Container(
                           color: Colors.white.withOpacity(0.4),
                           alignment: Alignment.center,

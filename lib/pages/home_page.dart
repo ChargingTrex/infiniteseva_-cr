@@ -10,6 +10,7 @@ import '../theme.dart';
 import '../util.dart';
 import '../widgets/ad_carousel.dart';
 import '../widgets/common.dart';
+import '../widgets/sync_banner.dart';
 import '../widgets/progress.dart';
 
 class HomePage extends StatefulWidget {
@@ -80,7 +81,6 @@ class _HomePageState extends State<HomePage> {
     final pct = ((_data?['percentage'] ?? 0) as num).toDouble().clamp(0.0, 100.0);
     final screen = MediaQuery.of(context).size;
     final ringSize = math.min(screen.width * 0.66, 280.0);
-    final adHeight = (screen.height * 0.30).clamp(190.0, 320.0);
     final ads = _mobileAds;
 
     return PageShell(
@@ -93,6 +93,7 @@ class _HomePageState extends State<HomePage> {
           physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
           children: [
+            const SyncBanner(),
             // Title block with dynamic language switching
             Text(
               app.isTamil
@@ -172,19 +173,29 @@ class _HomePageState extends State<HomePage> {
               ),
             ],
 
-            // Ads (AdCarousel)
-            if (ads.isNotEmpty) ...[
-              const SizedBox(height: 18),
+            // Ad space (1200 × 800), rotating every 5s. Uses the API's mobile
+            // ads like the web app; shows a placeholder when there are none.
+            const SizedBox(height: 18),
+            if (ads.isNotEmpty)
               Container(
-                height: adHeight,
                 clipBehavior: Clip.antiAlias,
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.6),
                   border: Border.all(color: C.gold.withOpacity(0.7), width: 2),
                 ),
-                child: AdCarousel(items: ads, label: 'Sponsors'),
-              ),
-            ],
+                child: AspectRatio(
+                  aspectRatio: 1200 / 800,
+                  child: AdCarousel(items: ads, label: 'Sponsors'),
+                ),
+              )
+            else
+              const AspectRatio(aspectRatio: 1200 / 800, child: _AdPlaceholder()),
+            // Bundled backup ads, disabled for now in favour of the placeholder:
+            // else
+            //   const AspectRatio(
+            //     aspectRatio: 1200 / 800,
+            //     child: AdCarousel(items: _staticAds, fit: BoxFit.contain),
+            //   ),
 
             // Footer
             const SizedBox(height: 16),
@@ -254,6 +265,79 @@ class _HomePageState extends State<HomePage> {
       ofTargetLabel: app.t('home.ofTarget'),
     );
   }
+}
+
+// /// Bundled ads for the fixed 1200 × 800 slot. Shown with BoxFit.contain so
+// /// contact details at the image edges are never cropped.
+// const _staticAds = [
+//   Ad(
+//     id: -1,
+//     position: 'STATIC',
+//     mobileImageUrl: 'assets/images/ad_infiniteseva.png',
+//     linkUrl: 'https://www.infiniteseva.org',
+//   ),
+//   Ad(
+//     id: -2,
+//     position: 'STATIC',
+//     mobileImageUrl: 'assets/images/ad_ricehr.png',
+//     linkUrl: 'https://www.ricehr.com',
+//   ),
+//   Ad(
+//     id: -3,
+//     position: 'STATIC',
+//     mobileImageUrl: 'assets/images/ad_temples.png',
+//     linkUrl: 'https://www.infiniteseva.org',
+//   ),
+// ];
+
+/// Empty ad slot, matching the web app's AdPlaceholder.
+class _AdPlaceholder extends StatelessWidget {
+  const _AdPlaceholder();
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      foregroundPainter: _DashedBorderPainter(color: C.goldDark.withOpacity(0.5)),
+      child: Container(
+        color: Colors.white.withOpacity(0.6),
+        alignment: Alignment.center,
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('Ad space', style: display(18)),
+            const SizedBox(height: 4),
+            Text('1200 × 800 px', style: body(14, color: C.blue, weight: FontWeight.w600)),
+            const SizedBox(height: 4),
+            Text('Horizontal image', style: body(12, color: C.maroon.withOpacity(0.6))),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DashedBorderPainter extends CustomPainter {
+  final Color color;
+  const _DashedBorderPainter({required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    const stroke = 2.0, dash = 6.0, gap = 4.0;
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = stroke
+      ..style = PaintingStyle.stroke;
+    final path = Path()..addRect(Rect.fromLTWH(1, 1, size.width - stroke, size.height - stroke));
+    for (final metric in path.computeMetrics()) {
+      for (double d = 0; d < metric.length; d += dash + gap) {
+        canvas.drawPath(metric.extractPath(d, d + dash), paint);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(_DashedBorderPainter old) => old.color != color;
 }
 
 class _StatsBand extends StatelessWidget {

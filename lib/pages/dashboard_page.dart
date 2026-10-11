@@ -6,6 +6,7 @@ import '../services/app_state.dart';
 import '../theme.dart';
 import '../util.dart';
 import '../widgets/common.dart';
+import '../widgets/sync_banner.dart';
 import '../widgets/progress.dart';
 
 // ───────────────────────── model ─────────────────────────
@@ -231,6 +232,7 @@ class _DashboardPageState extends State<DashboardPage> {
                 physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
                 children: [
+                  const SyncBanner(),
                   Text('${t('dashboard.namaste')} 🙏',
                       style: body(14, color: C.neutral500)),
                   Text(user?.name.isNotEmpty == true ? user!.name : (user?.mobile ?? ''),
